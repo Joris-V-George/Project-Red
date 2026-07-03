@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Estatehouse — A registry of property, kept plainly</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F7F4EE; --surface:#FFFFFF; --surface-alt:#FBF8F2; --ink:#1C1917;
+    --muted:#6B6259; --hairline:#E3DCCD; --red:#7E1D1D; --red-soft:rgba(126,29,29,0.08);
+    --brass:#9C8355; --on-red:#ffffff;
+  }
+  html.dark{
+    --bg:#14100E; --surface:#1E1815; --surface-alt:#241D19; --ink:#F3EEE6;
+    --muted:#A79C8E; --hairline:#332B26; --red:#C24545; --red-soft:rgba(194,69,69,0.14);
+    --brass:#B79A63; --on-red:#ffffff;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:'Inter',sans-serif; transition:background .3s ease, color .3s ease;}
+  .font-display{font-family:'Fraunces',serif;}
+  .font-mono{font-family:'IBM Plex Mono',monospace;}
+  a{text-decoration:none; color:inherit;}
+  button{font-family:inherit; cursor:pointer;}
+  input,select,textarea{font-family:inherit; color:var(--ink);}
+  .hidden{display:none !important;}
+
+  /* header */
+  header{
+    position:sticky; top:0; z-index:40; display:flex; align-items:center; justify-content:space-between;
+    padding:16px 24px; background:color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--hairline);
+  }
+  .brand{display:flex; align-items:center; gap:8px;}
+  .brand-mark{width:30px; height:30px; border-radius:50%; border:1.5px solid var(--red); display:flex; align-items:center; justify-content:center;}
+  .brand-name{font-size:18px; font-weight:500;}
+  nav.mainnav{display:flex; align-items:center; gap:28px;}
+  nav.mainnav button{background:none; border:none; color:var(--muted); font-size:14px; display:flex; align-items:center; gap:6px;}
+  @media (max-width:760px){ nav.mainnav{display:none;} }
+  .header-actions{display:flex; align-items:center; gap:12px;}
+  .theme-toggle{width:38px; height:38px; border-radius:50%; border:1px solid var(--hairline); background:var(--surface); display:flex; align-items:center; justify-content:center;}
+  .btn-red{background:var(--red); color:var(--on-red); border:none; border-radius:999px; font-weight:500; padding:10px 20px; font-size:14px; transition:transform .15s ease;}
+  .btn-red:hover{transform:scale(1.02);}
+  .btn-red:disabled{opacity:.4; cursor:not-allowed;}
+  .btn-ghost{background:none; border:none; color:var(--muted); font-size:14px; display:flex; align-items:center; gap:4px;}
+
+  /* hero */
+  .hero{padding:96px 24px 120px; position:relative; overflow:hidden;}
+  .hero-inner{max-width:720px; position:relative; z-index:2;}
+  .eyebrow{font-size:12px; letter-spacing:.2em; color:var(--red); margin-bottom:18px;}
+  h1.hero-title{font-size:clamp(2.5rem,6vw,4.6rem); font-weight:500; line-height:1.02; margin:0 0 24px;}
+  h1.hero-title em{color:var(--red); font-style:italic;}
+  .hero-sub{max-width:460px; color:var(--muted); font-size:17px; margin-bottom:40px;}
+  .hero-cta{display:inline-flex; align-items:center; gap:8px; background:var(--red); color:#fff; border:none; border-radius:999px; padding:8px 8px 8px 26px; font-size:15px; font-weight:500;}
+  .hero-cta .arrow{width:30px; height:30px; border-radius:50%; background:rgba(255,255,255,.18); display:flex; align-items:center; justify-content:center;}
+  .skyline{position:absolute; right:0; bottom:0; opacity:.9;}
+  @media (max-width:800px){ .skyline{display:none;} }
+
+  /* modal */
+  .modal-overlay{position:fixed; inset:0; z-index:50; background:rgba(10,8,7,.55); backdrop-filter:blur(3px); display:flex; align-items:center; justify-content:center; padding:16px;}
+  .modal{width:100%; max-width:460px; background:var(--surface); border:1px solid var(--hairline); border-radius:16px; box-shadow:0 30px 70px rgba(0,0,0,.35); position:relative; padding:32px;}
+  .modal.wide{max-width:560px;}
+  .modal-close{position:absolute; top:16px; right:16px; width:30px; height:30px; border-radius:50%; border:1px solid var(--hairline); background:none; display:flex; align-items:center; justify-content:center; color:var(--muted);}
+  .step-label{font-size:11px; letter-spacing:.15em; color:var(--red); margin-bottom:4px;}
+  .modal h2{font-family:'Fraunces',serif; font-size:26px; margin:0 0 4px;}
+  .modal p.sub{color:var(--muted); font-size:14px; margin:0 0 24px;}
+  .field{display:block; margin-bottom:16px;}
+  .field-label{font-size:11px; letter-spacing:.12em; color:var(--muted); display:block; margin-bottom:6px;}
+  .input, select, textarea.input{
+    width:100%; background:var(--surface-alt); border:1px solid var(--hairline); border-radius:10px;
+    padding:10px 12px; font-size:14px; outline:none;
+  }
+  textarea.input{min-height:80px; resize:vertical;}
+
+  .type-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:24px;}
+  .type-card{text-align:left; border:1px solid var(--hairline); background:var(--surface-alt); border-radius:12px; padding:20px; transition:transform .15s ease;}
+  .type-card:hover{transform:scale(1.02);}
+  .type-card h3{font-family:'Fraunces',serif; font-size:18px; margin:0 0 6px;}
+  .type-card p{font-size:12px; color:var(--muted); margin:0; line-height:1.4;}
+
+  /* ledger */
+  .ledger-item{display:flex; align-items:flex-start; gap:12px;}
+  .ledger-col{display:flex; flex-direction:column; align-items:center;}
+  .seal{border-radius:50%; border:1.5px solid var(--hairline); display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all .35s ease;}
+  .seal.filled{background:var(--red); border-color:var(--red);}
+  .seal-line{width:1px; height:22px; background:var(--hairline);}
+  .ledger-text .num{font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.15em; color:var(--muted);}
+  .ledger-text .label{font-size:14px; color:var(--muted);}
+  .ledger-text .label.active{color:var(--ink); font-weight:600;}
+  .ledger-text{padding-bottom:24px;}
+
+  /* config page */
+  .config-page{min-height:100vh; padding:40px 24px; background:var(--bg);}
+  .config-grid{max-width:1080px; margin:0 auto; display:grid; grid-template-columns:220px 1fr; gap:48px;}
+  @media (max-width:760px){ .config-grid{grid-template-columns:1fr;} .ledger-desktop{display:none;} }
+  .card{background:var(--surface); border:1px solid var(--hairline); border-radius:16px; padding:24px; margin-bottom:20px;}
+  .card-title{font-size:11px; letter-spacing:.15em; color:var(--muted); margin-bottom:16px;}
+  .locfields{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;}
+  @media (max-width:600px){ .locfields{grid-template-columns:1fr;} }
+
+  .map-box{position:relative; height:200px; border-radius:12px; border:1px solid var(--hairline); background-color:var(--surface-alt);
+    background-image:linear-gradient(var(--hairline) 1px, transparent 1px), linear-gradient(90deg, var(--hairline) 1px, transparent 1px);
+    background-size:24px 24px; cursor:crosshair; overflow:hidden;}
+  .map-hint{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--muted);}
+  .pin{position:absolute; transform:translate(-50%,-100%); pointer-events:none;}
+  .map-coords{display:flex; align-items:center; justify-content:space-between; margin-top:8px; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted);}
+  .map-coords .brass{color:var(--brass);}
+  .manual-coords{display:flex; gap:10px; margin-top:12px;}
+
+  .upload-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  .upload-box{width:100%; border:1px dashed var(--hairline); background:var(--surface-alt); border-radius:12px; padding:26px 10px; display:flex; flex-direction:column; align-items:center; gap:8px;}
+  .upload-box span{font-size:12px; color:var(--muted);}
+  .chip-row{display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;}
+  .chip{font-family:'IBM Plex Mono',monospace; font-size:10px; background:var(--red-soft); color:var(--red); border-radius:999px; padding:4px 10px;}
+
+  .stepper-row{display:flex; flex-wrap:wrap; gap:40px; margin-bottom:16px;}
+  .stepper{display:flex; align-items:center; gap:12px;}
+  .stepper button{width:30px; height:30px; border-radius:50%; border:1px solid var(--hairline); background:none; display:flex; align-items:center; justify-content:center;}
+  .stepper .val{font-family:'IBM Plex Mono',monospace; font-size:16px; width:24px; text-align:center;}
+  .dims-grid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;}
+
+  .submit-btn{width:100%; padding:15px; border-radius:999px; border:none; background:var(--red); color:#fff; font-weight:500; font-size:15px; display:flex; align-items:center; justify-content:center; gap:8px;}
+
+  /* success */
+  .success-page{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;}
+  .success-inner{max-width:520px; width:100%; text-align:center;}
+  .payload-box{text-align:left; background:var(--surface-alt); border:1px solid var(--hairline); border-radius:12px; padding:16px; margin:0 0 32px; max-height:220px; overflow:auto; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); white-space:pre-wrap;}
+</style>
+</head>
+<body>
+
+<!-- ============ SVG ICON DEFS (inline, no external deps) ============ -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.2" y1="4.2" x2="5.6" y2="5.6"/><line x1="18.4" y1="18.4" x2="19.8" y2="19.8"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.2" y1="19.8" x2="5.6" y2="18.4"/><line x1="18.4" y1="5.6" x2="19.8" y2="4.2"/></g></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></g></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></symbol>
+    <symbol id="i-chevron-left" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 6l-6 6 6 6"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24"><g stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></g></symbol>
+    <symbol id="i-mappin" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M12 21s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.3" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><path fill="none" stroke="currentColor" stroke-width="2" d="M21 15l-5-5-11 11"/></symbol>
+    <symbol id="i-video" viewBox="0 0 24 24"><rect x="2" y="6" width="14" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M16 10l6-3v10l-6-3z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></g></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" d="M4 20c0-4 4-6 8-6s8 2 8 6"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></g></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M12 21s-8-5-8-11a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 6-8 11-8 11z"/></symbol>
+    <symbol id="i-building" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1" fill="none" stroke="currentColor" stroke-width="2"/><line x1="8" y1="7" x2="8" y2="7.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  </defs>
+</svg>
+
+<!-- ============ HOME ============ -->
+<div id="view-home">
+  <header>
+    <div class="brand">
+      <div class="brand-mark"><svg width="14" height="14" style="color:var(--red)"><use href="#i-building"/></svg></div>
+      <span class="font-display brand-name">Estatehouse</span>
+    </div>
+    <nav class="mainnav">
+      <button><svg width="14" height="14"><use href="#i-user"/></svg> Profile</button>
+      <button><svg width="14" height="14"><use href="#i-grid"/></svg> My properties</button>
+      <button><svg width="14" height="14"><use href="#i-heart"/></svg> Wishlist</button>
+    </nav>
+    <div class="header-actions">
+      <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+        <svg width="16" height="16" id="theme-icon"><use href="#i-moon"/></svg>
+      </button>
+      <button class="btn-red" onclick="openRegister()">Register now</button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="eyebrow font-mono">A REGISTRY OF PROPERTY, KEPT PLAINLY</div>
+      <h1 class="hero-title font-display">Every address<br/>has a story.<br/><em>We record it.</em></h1>
+      <p class="hero-sub">List a property to sell, or file exactly what you're looking to buy. One straightforward record — location, dimensions, photos — held in a single ledger.</p>
+      <button class="hero-cta" onclick="openRegister()">
+        Register now
+        <span class="arrow"><svg width="14" height="14"><use href="#i-arrow-right"/></svg></span>
+      </button>
+    </div>
+    <svg class="skyline" width="480" height="300" viewBox="0 0 480 300" fill="none">
+      <g stroke="var(--hairline)" stroke-width="1">
+        <rect x="40" y="140" width="60" height="150"/><rect x="110" y="90" width="50" height="200"/>
+        <rect x="170" y="170" width="70" height="120"/><rect x="250" y="60" width="55" height="230"/>
+        <rect x="315" y="120" width="65" height="170"/><rect x="390" y="180" width="50" height="110"/>
+      </g>
+      <g stroke="var(--red)" stroke-width="1.3">
+        <line x1="250" y1="60" x2="250" y2="290" stroke-dasharray="2 4"/>
+        <circle cx="277" cy="60" r="3" fill="var(--red)" stroke="none"/>
+      </g>
+    </svg>
+  </section>
+</div>
+
+<!-- ============ REGISTER MODAL ============ -->
+<div id="modal-register" class="modal-overlay hidden" onclick="if(event.target===this) closeAll()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeAll()"><svg width="14" height="14"><use href="#i-x"/></svg></button>
+    <div class="step-label font-mono">01 · REGISTER</div>
+    <h2 class="font-display">Let's get your details</h2>
+    <p class="sub">We'll use this to keep your listing in touch with you.</p>
+    <label class="field"><span class="field-label font-mono">FULL NAME</span>
+      <input class="input" id="reg-name" placeholder="Anjali Rao" oninput="validateRegister()"/></label>
+    <label class="field"><span class="field-label font-mono">EMAIL</span>
+      <input class="input" id="reg-email" type="email" placeholder="anjali@email.com" oninput="validateRegister()"/></label>
+    <label class="field"><span class="field-label font-mono">PHONE</span>
+      <input class="input" id="reg-phone" placeholder="+91 98765 43210" oninput="validateRegister()"/></label>
+    <button class="btn-red" id="reg-continue" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px;" disabled onclick="openChoose()">
+      Continue <svg width="15" height="15"><use href="#i-chevron-right"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ============ CHOOSE TYPE MODAL ============ -->
+<div id="modal-choose" class="modal-overlay hidden" onclick="if(event.target===this) closeAll()">
+  <div class="modal wide" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeAll()"><svg width="14" height="14"><use href="#i-x"/></svg></button>
+    <div class="step-label font-mono">02 · CHOOSE</div>
+    <h2 class="font-display" style="margin-bottom:24px;">What brings you here?</h2>
+    <div class="type-grid">
+      <button class="type-card" onclick="chooseType('sell')">
+        <h3 class="font-display">Sell a property</h3>
+        <p>List an address you own, with photos and specs.</p>
+      </button>
+      <button class="type-card" onclick="chooseType('buy')">
+        <h3 class="font-display">Buy a property</h3>
+        <p>File what you're searching for, so we can match it.</p>
+      </button>
+    </div>
+    <button class="btn-ghost" onclick="openRegister()"><svg width="14" height="14"><use href="#i-chevron-left"/></svg> Back</button>
+  </div>
+</div>
+
+<!-- ============ CONFIG PAGE ============ -->
+<div id="view-config" class="config-page hidden">
+  <div class="config-grid">
+    <div class="ledger-desktop">
+      <div class="ledger-item"><div class="ledger-col"><div class="seal filled" style="width:26px;height:26px"><svg width="12" height="12"><use href="#i-check"/></svg></div><div class="seal-line"></div></div><div class="ledger-text"><div class="num">01</div><div class="label">Register</div></div></div>
+      <div class="ledger-item"><div class="ledger-col"><div class="seal filled" style="width:26px;height:26px"><svg width="12" height="12"><use href="#i-check"/></svg></div><div class="seal-line"></div></div><div class="ledger-text"><div class="num">02</div><div class="label">Choose</div></div></div>
+      <div class="ledger-item"><div class="ledger-col"><div class="seal" style="width:30px;height:30px;border-color:var(--red)"></div><div class="seal-line"></div></div><div class="ledger-text"><div class="num">03</div><div class="label active">Configure</div></div></div>
+      <div class="ledger-item"><div class="ledger-col"><div class="seal" style="width:26px;height:26px"></div></div><div class="ledger-text"><div class="num">04</div><div class="label">Submit</div></div></div>
+    </div>
+
+    <div>
+      <button class="btn-ghost" style="margin-bottom:24px;" onclick="openChoose()"><svg width="14" height="14"><use href="#i-chevron-left"/></svg> Back</button>
+      <div class="step-label font-mono">03 · CONFIGURE</div>
+      <h2 class="font-display" id="config-heading" style="font-size:30px; margin:0 0 4px;">Tell us about the property</h2>
+      <p class="sub" id="config-subheading">The more precise the record, the faster it finds a buyer.</p>
+
+      <!-- LOCATION -->
+      <div class="card">
+        <div class="card-title font-mono">LOCATION</div>
+        <div class="locfields" style="margin-bottom:16px;">
+          <label class="field" style="margin-bottom:0;"><span class="field-label font-mono">STATE / UT</span>
+            <select class="input" id="loc-state" onchange="onStateChange()"></select></label>
+          <label class="field" style="margin-bottom:0;"><span class="field-label font-mono">DISTRICT</span>
+            <select class="input" id="loc-district" onchange="validateConfig()"></select></label>
+          <label class="field" style="margin-bottom:0;"><span class="field-label font-mono">PLACE / LOCALITY</span>
+            <input class="input" id="loc-place" placeholder="e.g. Andheri West" oninput="validateConfig()"/></label>
+        </div>
+        <label class="field"><span class="field-label font-mono">PINCODE</span>
+          <input class="input font-mono" id="loc-pincode" maxlength="6" placeholder="110001" oninput="this.value=this.value.replace(/\D/g,''); validateConfig()"/></label>
+
+        <div class="card-title font-mono" style="margin-top:8px;">MAP COORDINATES</div>
+        <div class="map-box" id="map-box" onclick="dropPin(event)">
+          <div class="map-hint" id="map-hint">Click to drop a pin</div>
+        </div>
+        <div class="map-coords">
+          <span id="coord-readout">NO LOCATION SET</span>
+          <span class="brass">Swap in Google Maps JS API with your key for live picking</span>
+        </div>
+        <div class="manual-coords">
+          <label class="field" style="margin-bottom:0; flex:1;"><span class="field-label font-mono">LATITUDE</span>
+            <input class="input font-mono" id="loc-lat" placeholder="19.07600" oninput="onManualCoord()"/></label>
+          <label class="field" style="margin-bottom:0; flex:1;"><span class="field-label font-mono">LONGITUDE</span>
+            <input class="input font-mono" id="loc-lng" placeholder="72.87770" oninput="onManualCoord()"/></label>
+        </div>
+      </div>
+
+      <!-- MEDIA -->
+      <div class="card">
+        <div class="card-title font-mono">MEDIA <span id="media-optional-tag" class="brass" style="color:var(--brass)"></span></div>
+        <div class="upload-grid">
+          <div>
+            <button class="upload-box" onclick="document.getElementById('file-photos').click()">
+              <svg width="18" height="18" style="color:var(--red)"><use href="#i-image"/></svg>
+              <span>Upload photos</span>
+            </button>
+            <input type="file" id="file-photos" accept="image/*" multiple class="hidden" onchange="handleFiles(this,'photos')"/>
+            <div class="chip-row" id="photo-chips"></div>
+          </div>
+          <div>
+            <button class="upload-box" onclick="document.getElementById('file-video').click()">
+              <svg width="18" height="18" style="color:var(--red)"><use href="#i-video"/></svg>
+              <span>Upload a video</span>
+            </button>
+            <input type="file" id="file-video" accept="video/*" class="hidden" onchange="handleFiles(this,'video')"/>
+            <div class="chip-row" id="video-chips"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SPECS -->
+      <div class="card">
+        <div class="card-title font-mono">SPECIFICATIONS</div>
+        <div class="stepper-row">
+          <div><div class="field-label font-mono">ROOMS</div>
+            <div class="stepper"><button onclick="stepValue('rooms',-1,0)"><svg width="13" height="13"><use href="#i-minus"/></svg></button><span class="val" id="rooms-val">2</span><button onclick="stepValue('rooms',1,0)"><svg width="13" height="13"><use href="#i-plus"/></svg></button></div>
+          </div>
+          <div><div class="field-label font-mono">FLOORS</div>
+            <div class="stepper"><button onclick="stepValue('floors',-1,1)"><svg width="13" height="13"><use href="#i-minus"/></svg></button><span class="val" id="floors-val">1</span><button onclick="stepValue('floors',1,1)"><svg width="13" height="13"><use href="#i-plus"/></svg></button></div>
+          </div>
+        </div>
+        <div class="dims-grid">
+          <label class="field" style="margin-bottom:0;"><span class="field-label font-mono">AREA (SQ.M)</span>
+            <input class="input font-mono" id="dim-area" placeholder="120" oninput="this.value=this.value.replace(/[^0-9.]/g,''); validateConfig()"/></label>
+          <label class="field" style="margin-bottom:0;"><span class="field-label font-mono">LENGTH (M)</span>
+            <input class="input font-mono" id="dim-length" placeholder="12" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"/></label>
+          <label class="field" style="margin-bottom:0;"><span class="field-label font-mono">WIDTH (M)</span>
+            <input class="input font-mono" id="dim-width" placeholder="10" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"/></label>
+        </div>
+      </div>
+
+      <div class="card">
+        <label class="field" style="margin-bottom:0;"><span class="field-label font-mono">NOTES (OPTIONAL)</span>
+          <textarea class="input" id="notes" placeholder="Anything else worth recording..."></textarea></label>
+      </div>
+
+      <button class="submit-btn" id="submit-btn" disabled onclick="submitListing()">
+        Submit to the registry <svg width="15" height="15"><use href="#i-chevron-right"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SUCCESS ============ -->
+<div id="view-success" class="success-page hidden">
+  <div class="success-inner">
+    <div style="display:flex; justify-content:center; margin-bottom:24px;">
+      <div class="seal filled" style="width:54px;height:54px;"><svg width="22" height="22"><use href="#i-check"/></svg></div>
+    </div>
+    <div class="step-label font-mono" style="text-align:center;">04 · FILED</div>
+    <h2 class="font-display" style="font-size:30px;">Your record is in the ledger.</h2>
+    <p class="sub" id="success-message"></p>
+    <div class="payload-box"><pre id="payload-preview"></pre></div>
+    <button class="btn-red" onclick="resetToHome()">Back to homepage</button>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   SETUP: paste your deployed Google Apps Script Web App URL below.
+   Until you do, submissions won't leave the browser — you'll just see
+   the exact payload that would have been sent.
+   ===================================================================== */
+const GOOGLE_SCRIPT_URL = "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
+
+/* ---------------- India states & districts (representative set) ---------------- */
+const INDIA_LOCATIONS = {
+  "Andhra Pradesh": ["Visakhapatnam","Vijayawada","Guntur","Nellore","Kurnool","Tirupati","Anantapur","Kadapa"],
+  "Arunachal Pradesh": ["Itanagar","Tawang","Ziro","Pasighat"],
+  "Assam": ["Guwahati","Dibrugarh","Silchar","Jorhat","Tezpur"],
+  "Bihar": ["Patna","Gaya","Bhagalpur","Muzaffarpur","Darbhanga"],
+  "Chhattisgarh": ["Raipur","Bilaspur","Durg","Korba","Bhilai"],
+  "Goa": ["North Goa","South Goa"],
+  "Gujarat": ["Ahmedabad","Surat","Vadodara","Rajkot","Bhavnagar","Gandhinagar","Jamnagar"],
+  "Haryana": ["Gurugram","Faridabad","Panipat","Ambala","Hisar","Karnal"],
+  "Himachal Pradesh": ["Shimla","Manali","Kangra","Solan","Mandi"],
+  "Jharkhand": ["Ranchi","Jamshedpur","Dhanbad","Bokaro"],
+  "Karnataka": ["Bengaluru Urban","Mysuru","Mangaluru","Belagavi","Hubballi-Dharwad","Kalaburagi"],
+  "Kerala": ["Thiruvananthapuram","Kochi","Kozhikode","Thrissur","Kollam","Kannur"],
+  "Madhya Pradesh": ["Bhopal","Indore","Gwalior","Jabalpur","Ujjain"],
+  "Maharashtra": ["Mumbai City","Mumbai Suburban","Pune","Nagpur","Nashik","Thane","Aurangabad","Kolhapur","Solapur"],
+  "Manipur": ["Imphal East","Imphal West"],
+  "Meghalaya": ["East Khasi Hills","West Garo Hills"],
+  "Mizoram": ["Aizawl","Lunglei"],
+  "Nagaland": ["Kohima","Dimapur"],
+  "Odisha": ["Bhubaneswar","Cuttack","Rourkela","Puri","Sambalpur"],
+  "Punjab": ["Ludhiana","Amritsar","Jalandhar","Patiala","Mohali"],
+  "Rajasthan": ["Jaipur","Jodhpur","Udaipur","Kota","Ajmer","Bikaner"],
+  "Sikkim": ["East Sikkim","West Sikkim"],
+  "Tamil Nadu": ["Chennai","Coimbatore","Madurai","Tiruchirappalli","Salem","Tirunelveli"],
+  "Telangana": ["Hyderabad","Warangal","Nizamabad","Karimnagar"],
+  "Tripura": ["West Tripura","South Tripura"],
+  "Uttar Pradesh": ["Lucknow","Kanpur","Noida","Ghaziabad","Agra","Varanasi","Prayagraj","Meerut"],
+  "Uttarakhand": ["Dehradun","Haridwar","Nainital","Udham Singh Nagar"],
+  "West Bengal": ["Kolkata","Howrah","Darjeeling","Siliguri","Durgapur","Asansol"],
+  "Andaman and Nicobar Islands": ["South Andaman","North and Middle Andaman"],
+  "Chandigarh": ["Chandigarh"],
+  "Dadra and Nagar Haveli and Daman and Diu": ["Daman","Diu","Dadra and Nagar Haveli"],
+  "Delhi": ["New Delhi","North Delhi","South Delhi","East Delhi","West Delhi"],
+  "Jammu and Kashmir": ["Srinagar","Jammu","Anantnag","Baramulla"],
+  "Ladakh": ["Leh","Kargil"],
+  "Lakshadweep": ["Lakshadweep"],
+  "Puducherry": ["Puducherry","Karaikal"]
+};
+
+/* ---------------- state ---------------- */
+let listingType = null;
+let mapPin = null; // {x, y, lat, lng}
+let uploadedPhotos = [];
+let uploadedVideo = [];
+let counters = { rooms: 2, floors: 1 };
+
+/* ---------------- theme ---------------- */
+const themeToggle = document.getElementById('theme-toggle');
+const themeIcon = document.getElementById('theme-icon');
+themeToggle.addEventListener('click', () => {
+  document.documentElement.classList.toggle('dark');
+  const isDark = document.documentElement.classList.contains('dark');
+  themeIcon.innerHTML = `<use href="${isDark ? '#i-sun' : '#i-moon'}"/>`;
+});
+
+/* ---------------- navigation ---------------- */
+function closeAll(){
+  document.getElementById('modal-register').classList.add('hidden');
+  document.getElementById('modal-choose').classList.add('hidden');
+}
+function openRegister(){
+  closeAll();
+  document.getElementById('modal-register').classList.remove('hidden');
+}
+function openChoose(){
+  closeAll();
+  document.getElementById('modal-choose').classList.remove('hidden');
+}
+function chooseType(type){
+  listingType = type;
+  closeAll();
+  document.getElementById('view-config').classList.remove('hidden');
+  document.getElementById('view-home').classList.add('hidden');
+  const isSell = type === 'sell';
+  document.getElementById('config-heading').textContent = isSell ? "Tell us about the property" : "Tell us what you're looking for";
+  document.getElementById('config-subheading').textContent = isSell ? "The more precise the record, the faster it finds a buyer." : "We'll match this against listings as they come in.";
+  document.getElementById('media-optional-tag').textContent = isSell ? "" : "· OPTIONAL FOR BUYERS";
+  populateStates();
+}
+function resetToHome(){
+  document.getElementById('view-success').classList.add('hidden');
+  document.getElementById('view-home').classList.remove('hidden');
+  listingType = null; mapPin = null; uploadedPhotos = []; uploadedVideo = [];
+  counters = { rooms: 2, floors: 1 };
+  document.getElementById('reg-name').value = '';
+  document.getElementById('reg-email').value = '';
+  document.getElementById('reg-phone').value = '';
+  window.scrollTo(0,0);
+}
+
+/* ---------------- register validation ---------------- */
+function validateRegister(){
+  const name = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const phone = document.getElementById('reg-phone').value.trim();
+  const valid = name && /\S+@\S+\.\S+/.test(email) && phone.length >= 7;
+  document.getElementById('reg-continue').disabled = !valid;
+}
+
+/* ---------------- location dropdowns ---------------- */
+function populateStates(){
+  const stateSel = document.getElementById('loc-state');
+  stateSel.innerHTML = '<option value="">Select state / UT</option>' +
+    Object.keys(INDIA_LOCATIONS).sort().map(s => `<option value="${s}">${s}</option>`).join('');
+  document.getElementById('loc-district').innerHTML = '<option value="">Select state first</option>';
+}
+function onStateChange(){
+  const state = document.getElementById('loc-state').value;
+  const distSel = document.getElementById('loc-district');
+  if(!state){ distSel.innerHTML = '<option value="">Select state first</option>'; validateConfig(); return; }
+  const districts = INDIA_LOCATIONS[state] || [];
+  distSel.innerHTML = '<option value="">Select district</option>' +
+    districts.map(d => `<option value="${d}">${d}</option>`).join('') +
+    '<option value="Other">Other / not listed</option>';
+  validateConfig();
+}
+
+/* ---------------- map picker ---------------- */
+function dropPin(e){
+  const box = document.getElementById('map-box');
+  const rect = box.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / rect.width;
+  const y = (e.clientY - rect.top) / rect.height;
+  const CENTER = { lat: 20.5937, lng: 78.9629 };
+  const SPAN = { lat: 8, lng: 8 };
+  const lat = (CENTER.lat + SPAN.lat/2 - y*SPAN.lat).toFixed(5);
+  const lng = (CENTER.lng - SPAN.lng/2 + x*SPAN.lng).toFixed(5);
+  mapPin = { x, y, lat, lng };
+  renderPin();
+  document.getElementById('loc-lat').value = lat;
+  document.getElementById('loc-lng').value = lng;
+  validateConfig();
+}
+function renderPin(){
+  const box = document.getElementById('map-box');
+  document.getElementById('map-hint').classList.add('hidden');
+  let pinEl = document.getElementById('dropped-pin');
+  if(!pinEl){
+    pinEl = document.createElement('div');
+    pinEl.id = 'dropped-pin';
+    pinEl.className = 'pin';
+    pinEl.innerHTML = `<svg width="26" height="26" style="color:var(--red)"><use href="#i-mappin"/></svg>`;
+    box.appendChild(pinEl);
+  }
+  pinEl.style.left = (mapPin.x*100) + '%';
+  pinEl.style.top = (mapPin.y*100) + '%';
+  document.getElementById('coord-readout').textContent = `LAT ${mapPin.lat} · LNG ${mapPin.lng}`;
+}
+function onManualCoord(){
+  const lat = document.getElementById('loc-lat').value.trim();
+  const lng = document.getElementById('loc-lng').value.trim();
+  if(lat && lng){
+    mapPin = { x: 0.5, y: 0.5, lat, lng };
+    document.getElementById('coord-readout').textContent = `LAT ${lat} · LNG ${lng} (entered manually)`;
+    const existing = document.getElementById('dropped-pin');
+    if(existing) existing.remove();
+    document.getElementById('map-hint').classList.add('hidden');
+  }
+  validateConfig();
+}
+
+/* ---------------- file uploads ---------------- */
+function fileToDataUrl(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve({ name: file.name, type: file.type, dataUrl: reader.result });
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+async function handleFiles(input, kind){
+  const files = Array.from(input.files || []);
+  const read = await Promise.all(files.map(fileToDataUrl));
+  if(kind === 'photos'){ uploadedPhotos = uploadedPhotos.concat(read); renderChips('photo-chips', uploadedPhotos); }
+  else { uploadedVideo = read; renderChips('video-chips', uploadedVideo); }
+}
+function renderChips(elId, files){
+  document.getElementById(elId).innerHTML = files.map(f =>
+    `<span class="chip">${f.name.length>16 ? f.name.slice(0,14)+'…' : f.name}</span>`).join('');
+}
+
+/* ---------------- steppers ---------------- */
+function stepValue(key, delta, min){
+  counters[key] = Math.max(min, counters[key] + delta);
+  document.getElementById(key + '-val').textContent = counters[key];
+}
+
+/* ---------------- config validation ---------------- */
+function validateConfig(){
+  const pincode = document.getElementById('loc-pincode').value.trim();
+  const area = document.getElementById('dim-area').value.trim();
+  const valid = pincode.length >= 4 && area.length > 0;
+  document.getElementById('submit-btn').disabled = !valid;
+}
+
+/* ---------------- submit ---------------- */
+async function submitListing(){
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Filing your record…';
+
+  const payload = {
+    timestamp: new Date().toISOString(),
+    name: document.getElementById('reg-name').value.trim(),
+    email: document.getElementById('reg-email').value.trim(),
+    phone: document.getElementById('reg-phone').value.trim(),
+    listingType,
+    state: document.getElementById('loc-state').value,
+    district: document.getElementById('loc-district').value,
+    place: document.getElementById('loc-place').value.trim(),
+    pincode: document.getElementById('loc-pincode').value.trim(),
+    location: mapPin ? { lat: mapPin.lat, lng: mapPin.lng } : null,
+    rooms: counters.rooms,
+    floors: counters.floors,
+    areaSqm: document.getElementById('dim-area').value.trim(),
+    lengthM: document.getElementById('dim-length').value.trim(),
+    widthM: document.getElementById('dim-width').value.trim(),
+    notes: document.getElementById('notes').value.trim(),
+    photos: uploadedPhotos.map(p => ({ name: p.name, type: p.type })),
+    video: uploadedVideo.map(v => ({ name: v.name, type: v.type })),
+  };
+
+  if(!GOOGLE_SCRIPT_URL.startsWith("PASTE")){
+    try{
+      await fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST', mode: 'no-cors', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ ...payload, photos: uploadedPhotos, video: uploadedVideo })
+      });
+    }catch(err){ console.error('Submission error:', err); }
+  }
+
+  document.getElementById('view-config').classList.add('hidden');
+  document.getElementById('view-success').classList.remove('hidden');
+  document.getElementById('success-message').textContent = GOOGLE_SCRIPT_URL.startsWith("PASTE")
+    ? "Connect your Apps Script URL to send this to your Google Sheet automatically — for now, here's exactly what would be sent:"
+    : "This has been sent to your Google Sheet.";
+  document.getElementById('payload-preview').textContent = JSON.stringify(payload, null, 2).slice(0,1200);
+  window.scrollTo(0,0);
+}
+</script>
+</body>
+</html>
